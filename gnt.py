@@ -3,10 +3,10 @@ import random
 
 POP_SIZE = 10
 random.seed(3)
-bits = 10
+bits = 20
 bounds =[[0,10],[0,20],[0,30]]
-Pm = 0.7
-
+Pm = 0.2
+Pc=0.7
 
 
 def decode( bounds, bits, genes):
@@ -22,7 +22,7 @@ def objective_function(t):
     y = t[1]
     z = t[2]
 
-    Objective_max = x**3 - y**3 - z**4 +x*y*z
+    Objective_max = x**3 + y**3 + z**3 +x*y*z
     
     return Objective_max
 
@@ -36,7 +36,7 @@ class Chromosome:
         self.qprob = qprob
         self.real_genes = decode(bounds, bits, self.genes)
         self.fitness = objective_function(self.real_genes)
-        self.selected = 0
+        #self.selected = 0
     
     @classmethod
     def rand(cls):
@@ -72,30 +72,35 @@ class Chromosome:
 
 
 class GeneticAlgorithm:
-    def __init__(self,size=100):
+    def __init__(self,size=POP_SIZE):
         self.size=size
         self.population = []
         self.flag = False #if true pop has negative values
         for i in range(size):
             self.population.append(Chromosome.rand())
             if not self.flag and self.population[i].fitness<0:
-                self.flag = True 
+                self.flag = True
+                 
 
     def misc(self):
         self.fitness_sum = 0
         self.qprob = 0
         pop = self.population
-        t=[]
         
-        if self.flag:#scale fitness values
+
+        #scale fitness values
+        if self.flag:
             min_fitness = pop[0].fitness
             for chromosome in pop:
                 if chromosome.fitness < min_fitness:
                     min_fitness = chromosome.fitness
 
             for chromosome in pop:
-                chromosome.fitness-=min_fitness -10 #-10 because fitness can't be zero
+                chromosome.fitness-=min_fitness -10 #because fitness can't be zero
                 self.fitness_sum += chromosome.fitness
+        else:
+            for chromosome in pop:
+                self.fitness_sum += chromosome.fitness 
         for chromosome in pop:
             chromosome.prob = chromosome.fitness/self.fitness_sum
             self.qprob += chromosome.prob
@@ -103,16 +108,19 @@ class GeneticAlgorithm:
             
 
     def selection(self):
-        
         t=[]
-        for _ in range(self.size):
+        #elite = self.population[0]
+        #index =0
+        #for i in range(1,self.size-1):
+        #    if self.population[i].fitness>elite.fitness:
+        #        elite = self.population[i]
+        #        index = i
+        #t.append(self.population.pop(index))      
+        for _ in range(self.size):        
             r = random.random()
             for chromosome in self.population:
-                
                 x=chromosome.qprob
-                if r <= chromosome.qprob:
-                    
-                    chromosome.selected+=1       
+                if r <= chromosome.qprob:  
                     t.append(chromosome)
                     break
         self.population =t
@@ -120,28 +128,28 @@ class GeneticAlgorithm:
         
     
     
-    def crossover(self):
+    def crossover(self,crossover_rate:float):
         pop = self.population
         children = list()
         for i in range(int(len(pop)/2)):
             parent1 = pop[2*i-1].get_genes()
             parent2 = pop[2*i].get_genes()
+            if random.random()<crossover_rate:
+                r = random.random()
+                for i in range(1,bits):  
+                    if r<i/(bits-1):
 
-            r = random.random()
-            for i in range(1,bits):  
-                if r<i/(bits-1):
-                    
-                    index = i
+                        index = i
 
-                    break
-            #print(f"before crossover:\np1 = {parent1}\np2 = {parent2} crossover point: {index}")
-            child1 = [parent1[0][:index] +parent2[0][index:], parent1[1][:index] +parent2[1][index:],parent1[2][:index] +parent2[2][index:] ]
-            child2 = [parent2[0][:index] +parent1[0][index:], parent2[1][:index] +parent1[1][index:],parent2[2][:index] +parent1[2][index:] ]
-           #print(f"after crossover {child1,child2}")
-            child1 = Chromosome(child1)
-            child2 = Chromosome(child2)
-            children.append(child1)
-            children.append(child2)
+                        break
+                child1 = [parent1[0][:index] +parent2[0][index:], parent1[1][:index] +parent2[1][index:],parent1[2][:index] +parent2[2][index:] ]
+                child2 = [parent2[0][:index] +parent1[0][index:], parent2[1][:index] +parent1[1][index:],parent2[2][:index] +parent1[2][index:] ]
+                
+                children.append(Chromosome(child1))
+                children.append(Chromosome(child2))
+            else:
+                children.append(Chromosome(parent1))
+                children.append(Chromosome(parent2))
         self.population = children
         
 
@@ -150,7 +158,7 @@ class GeneticAlgorithm:
         offsprings = []
         for chromosome in pop:
             z = chromosome.get_genes()
-            if random.random() <= mutation_rate:
+            if random.random() < mutation_rate:
                 i = random.randint(0,2)
                 j = random.randint(0,bits-1)
                 c = z
@@ -158,7 +166,7 @@ class GeneticAlgorithm:
                 #print(c)
                 if c[i][j] == '1':#flip
                     c[i][j] = '0' 
-                elif c[i][j]=='0':
+                else:
                     c[i][j] ='1'
                 offsprings.append(Chromosome(c))
                 #print('meta')
@@ -167,6 +175,13 @@ class GeneticAlgorithm:
                 offsprings.append(Chromosome(z))
                 
         self.population = offsprings
+
+    def best(self):
+        best_chrom =self.population[0]
+        for chromosome in self.population:
+            if chromosome.fitness>best_chrom.fitness:
+                best_chrom = chromosome
+        return best_chrom
 
     def __str__(self):
         
@@ -179,17 +194,13 @@ class GeneticAlgorithm:
         
                     
 
-ga = GeneticAlgorithm(10)
+ga = GeneticAlgorithm(1000)
 print(ga)
 
-
-for i in range(10):
+for i in range(10000):
     ga.misc()
     ga.selection()
-    ga.crossover()
-    ga.mutation(0.3)
-
-
-print(ga)
-
-
+    ga.crossover(0.8)
+    ga.mutation(0.1)
+    if i%20==0:
+        print("generation: ",i,ga.best())
