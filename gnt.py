@@ -3,11 +3,11 @@ import random
 
 POP_SIZE = 10
 random.seed(3)
-bits = 20
+bits = 50
 bounds =[[0,10],[0,20],[0,30]]
 Pm = 0.2
 Pc=0.7
-
+Er=0.1
 
 def decode( bounds, bits, genes):
         real_chromosome=[]
@@ -22,7 +22,7 @@ def objective_function(t):
     y = t[1]
     z = t[2]
 
-    Objective_max = x**3 + y**3 + z**3 +x*y*z
+    Objective_max = x**3 + y**3 + z**4 +x*y*z
     
     return Objective_max
 
@@ -74,6 +74,7 @@ class Chromosome:
 class GeneticAlgorithm:
     def __init__(self,size=POP_SIZE):
         self.size=size
+        
         self.population = []
         self.flag = False #if true pop has negative values
         for i in range(size):
@@ -82,40 +83,39 @@ class GeneticAlgorithm:
                 self.flag = True
                  
 
-    def misc(self):
+    def misc(self, elitism_ratio = Er):
         self.fitness_sum = 0
         self.qprob = 0
         pop = self.population
-        
+        self.elites = []
 
-        #scale fitness values
+        #elitism
+        sorted_pop = sorted(self.population, key=lambda chromosome: chromosome.fitness, reverse=True)
+        for i in range(int(elitism_ratio*self.size)):
+            self.elites.append(sorted_pop.pop(i))
+        self.population = [chromosome for chromosome in self.population if chromosome  in sorted_pop ]
+        #scale fitness values 
         if self.flag:
-            min_fitness = pop[0].fitness
+            
+            min_fitness = sorted_pop[-1].fitness
             for chromosome in pop:
-                if chromosome.fitness < min_fitness:
-                    min_fitness = chromosome.fitness
-
-            for chromosome in pop:
-                chromosome.fitness-=min_fitness -10 #because fitness can't be zero
+                chromosome.fitness-=min_fitness-10 #fitness can't be zero
                 self.fitness_sum += chromosome.fitness
-        else:
-            for chromosome in pop:
-                self.fitness_sum += chromosome.fitness 
+        
+        for chromosome in pop:
+            self.fitness_sum += chromosome.fitness
         for chromosome in pop:
             chromosome.prob = chromosome.fitness/self.fitness_sum
             self.qprob += chromosome.prob
             chromosome.qprob += self.qprob
-            
+
+        
+
 
     def selection(self):
         t=[]
-        #elite = self.population[0]
-        #index =0
-        #for i in range(1,self.size-1):
-        #    if self.population[i].fitness>elite.fitness:
-        #        elite = self.population[i]
-        #        index = i
-        #t.append(self.population.pop(index))      
+
+        
         for _ in range(self.size):        
             r = random.random()
             for chromosome in self.population:
@@ -123,6 +123,7 @@ class GeneticAlgorithm:
                 if r <= chromosome.qprob:  
                     t.append(chromosome)
                     break
+        
         self.population =t
         
         
@@ -174,7 +175,7 @@ class GeneticAlgorithm:
             else:
                 offsprings.append(Chromosome(z))
                 
-        self.population = offsprings
+        self.population = [*offsprings,*self.elites]
 
     def best(self):
         best_chrom =self.population[0]
@@ -194,13 +195,20 @@ class GeneticAlgorithm:
         
                     
 
-ga = GeneticAlgorithm(1000)
-print(ga)
+ga = GeneticAlgorithm(100)
 
-for i in range(10000):
-    ga.misc()
+
+for i in range(15000):
+    ga.misc(0.1)
+    
     ga.selection()
-    ga.crossover(0.8)
-    ga.mutation(0.1)
-    if i%20==0:
-        print("generation: ",i,ga.best())
+    ga.crossover(0.5)
+    ga.mutation(0.3)
+    print("generation: ",i,ga.best())
+    #print(ga)
+    #for chromosome in ga.elites:
+    #    print(chromosome)
+#print(ga)
+#
+#for chromosome in ga.elites:
+#    print(chromosome)
