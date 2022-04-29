@@ -94,6 +94,7 @@ class GeneticAlgorithm:
         for i in range(int(elitism_ratio*self.size)):
             self.elites.append(sorted_pop.pop(i))
         self.population = [chromosome for chromosome in self.population if chromosome  in sorted_pop ]
+        print(len(self.population))
         #scale fitness values 
         if self.flag:
             
@@ -190,15 +191,15 @@ class GeneticAlgorithm:
         for chrome in self.population:
             
             #s+=f"Το χρωμόσωμα {chrome.real_genes} επιλέχθηκε {chrome.selected} φορές ενω αναμενόταν να επιλεχθεί {chrome.prob*self.size} φορές \n"
-            s+=f"{chrome.real_genes} {chrome.get_bin()} fitness ={chrome.fitness}, probability = {chrome.prob} \n"
+            s+=f"{chrome.real_genes} fitness ={chrome.fitness} \n"
         return s
         
                     
 
-ga = GeneticAlgorithm(100)
+ga = GeneticAlgorithm(10)
 
 
-for i in range(15000):
+for i in range(1000):
     ga.misc(0.1)
     
     ga.selection()
@@ -208,7 +209,7 @@ for i in range(15000):
     #print(ga)
     #for chromosome in ga.elites:
     #    print(chromosome)
-#print(ga)
+print(ga)
 #
-#for chromosome in ga.elites:
-#    print(chromosome)
+for chrome in ga.elites:
+    print(chrome)
