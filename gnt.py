@@ -3,7 +3,7 @@ import random
 
 POP_SIZE = 10
 random.seed(3)
-bits = 50
+bits = 10
 bounds =[[0,10],[0,20],[0,30]]
 Pm = 0.2
 Pc=0.7
@@ -76,7 +76,7 @@ class GeneticAlgorithm:
         self.size=size
         
         self.population = []
-        self.flag = False #if true pop has negative values
+        self.flag = False #if true pop has negative fitness values
         for i in range(size):
             self.population.append(Chromosome.rand())
             if not self.flag and self.population[i].fitness<0:
@@ -86,26 +86,26 @@ class GeneticAlgorithm:
     def misc(self, elitism_ratio = Er):
         self.fitness_sum = 0
         self.qprob = 0
-        pop = self.population
+        
         self.elites = []
 
         #elitism
-        sorted_pop = sorted(self.population, key=lambda chromosome: chromosome.fitness, reverse=True)
-        for i in range(int(elitism_ratio*self.size)):
-            self.elites.append(sorted_pop.pop(i))
-        self.population = [chromosome for chromosome in self.population if chromosome  in sorted_pop ]
-        print(len(self.population))
+        self.population = sorted(self.population, key=lambda chromosome: chromosome.fitness, reverse=True)
+        for _ in range(int(elitism_ratio*self.size)):
+            self.elites.append(self.population.pop(0))
+            
+        
         #scale fitness values 
         if self.flag:
             
-            min_fitness = sorted_pop[-1].fitness
-            for chromosome in pop:
+            min_fitness = self.population[-1].fitness
+            for chromosome in self.population:
                 chromosome.fitness-=min_fitness-10 #fitness can't be zero
                 self.fitness_sum += chromosome.fitness
         
-        for chromosome in pop:
+        for chromosome in self.population:
             self.fitness_sum += chromosome.fitness
-        for chromosome in pop:
+        for chromosome in self.population:
             chromosome.prob = chromosome.fitness/self.fitness_sum
             self.qprob += chromosome.prob
             chromosome.qprob += self.qprob
@@ -196,20 +196,20 @@ class GeneticAlgorithm:
         
                     
 
-ga = GeneticAlgorithm(10)
+ga = GeneticAlgorithm(100)
+import time
 
-
-for i in range(1000):
+for i in range(1000000):
     ga.misc(0.1)
     
     ga.selection()
-    ga.crossover(0.5)
-    ga.mutation(0.3)
-    print("generation: ",i,ga.best())
-    #print(ga)
-    #for chromosome in ga.elites:
-    #    print(chromosome)
-print(ga)
-#
+    ga.crossover(0)
+    ga.mutation(0.1)
+    
+    if i%100==0:
+        print("generation: ",i,ga.best())
+    
+
+
 for chrome in ga.elites:
     print(chrome)
